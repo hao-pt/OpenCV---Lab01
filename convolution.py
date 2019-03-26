@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from skimage.exposure import rescale_intensity
+from skimage import exposure, img_as_ubyte
 
 class CMyConvolution:
     #Ham khoi tao
@@ -12,50 +12,59 @@ class CMyConvolution:
 
     #Gan kernel voi 1 mask cho truoc
     def setKernel(self, mask):
-        self.kW, self.kH = mask.shape
+        self.kH, self.kW = mask.shape
         self.kernel = mask
     
     #Flip filter
     def flipFilter(self):
         return self.kernel[::-1, ::-1]
 
+    #Convolution òf img and kernel/mask 
     def convolution(self, img):
         #Padding de output image keep the same size as input image
         #Tinh padding them vao
-        p = (self.kW - 1) // 2
+        pV = (self.kH - 1) // 2
+        pH = (self.kW - 1) // 2
         #Padding
-        paddingImg = cv2.copyMakeBorder(img, p, p, p, p, cv2.BORDER_REPLICATE)
+        paddingImg = cv2.copyMakeBorder(img, pV, pV, pH, pH, cv2.BORDER_REPLICATE)
 
         #Size of img
         iH, iW = img.shape
 
         #Output image
-        #Use dtype = np.float64 because avoiding out of range [0, 255] when convoling
+        #Use dtype = np.float64 because avoiding out of range [0, 255] when doing convolution
         outImg = np.zeros(img.shape, dtype = np.float64)
 
         #flip filter then multiply element-wise
         flipKernel = self.flipFilter()
 
-        #Scan image without padding. Cause center of kernel slide in each pixel of image
-        for y in range(p, iH):
-            for x in range(p, iW):
+        #Scan image without padding indices. Cause center of kernel slide in each pixel of image
+        for y in range(pV, iH):
+            for x in range(pH, iW):
                 #Extract the roi (Region of interesting) that have same size as kernel
-                roi = paddingImg[y - p: y + p + 1, x-p: x + p + 1]
+                roi = paddingImg[y - pV: y + pV + 1, x-pH: x + pH + 1]
 
                 #Element-wise multiplication of roi & kernel then get the sum of it 
                 # to get the convolve output
-                k = (roi * flipKernel).sum()
+                k = abs((roi * flipKernel).sum())
 
                 #Assign this convole output to pixel (y, x) of output image
-                #Note: without padding
+                #Note: Ouput size remain the same as the original img
                 #Use method: .itemset of numpy to speed up modify pixel in image 
-                outImg.itemset((y - p, x - p), k)
+                outImg.itemset((y - pV, x - pH), k)
         
-        #Normalize the output image to be in range [0, 255]
-        outImg = rescale_intensity(outImg, in_range=(0, 255))
-        #Convert output image's dtype back to uint8. Because its dtype still float64
-        outImg = (outImg * 255).astype(np.uint8)
+        #Normalize the output image to be in range [0, 255] accurately_
+        #_when it's presented in float dtype [0, 1] called 'shrinking image' by this fomular:
+        #   nData = (data - inRange.min)*(outRange.Max - outRange.Min)/(inRange.max - inRange.min) 
+        #                                                                                       + outRange.Min 
+        #   inRange is intensity range of input image
+        #   outRange is intensity range of output image
 
+        #In this case, outRange is [0, 1] by default
+        outImg = exposure.rescale_intensity(outImg, in_range=(0, 255))
+        #Convert output image's dtype back to uint8 with scaling it by 255. Because its dtype still float64
+        #outImg = (outImg * 255).astype(np.uint8)
+        outImg = img_as_ubyte(outImg)
         return outImg
 
 
