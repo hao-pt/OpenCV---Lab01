@@ -5,24 +5,30 @@ import filter as flt
 import math
 
 
-
-
 #Read image & display it
-img = myImage.readImage('chair.png')
-myImage.writeImage('Original image', img)
+img = myImage.readImage('girl.png')
 
 #Grayscale image
 grayImg = myImage.grayScale(img)
 myImage.writeImage('Grayscale image', grayImg)
 
-#Detect edges
+# Detect edges
 filter = flt.CFilter()
-print(filter.gaussianGenerator(5, 1.0))
-xImg, yImg, xyImg = filter.edgeDetector(grayImg, 'sobel')
-#Show edges image
-myImage.writeImage('Vertical image', xImg)
-myImage.writeImage('Horizontal image', yImg)
-myImage.writeImage('Edge detection', xyImg)
+# filter.gaussianGenerator(5, 1.4)
+# xImg, yImg, xyImg = filter.detectByPrewitt(grayImg)
+# #Show edges image
+# myImage.writeImage('Vertical image', xImg)
+# myImage.writeImage('Horizontal image', yImg)
+# myImage.writeImage('Edge detection', xyImg)
+
+# Canny edge detector
+filter.gaussianGenerator(5, 1)
+cannyImg = filter.detectByCanny(grayImg)
+myImage.writeImage('Canny edge detector', cannyImg)
+
+# # Detect edges by LoG
+# outImg = filter.detectByLaplacian(grayImg)
+# myImage.writeImage('Edge detection - Laplacian of Gaussian', outImg)
 
 # meanImg = filter.smoothenImage(grayImg, 'mean')
 # myImage.writeImage('Blur image - mean filter', meanImg)
@@ -41,6 +47,5 @@ myImage.writeImage('Edge detection', xyImg)
 # print(c.dtype, c)
 
 cv2.waitKey(0)
-#Destroy all windows
+# Destroy all windows
 cv2.destroyAllWindows()
-

@@ -60,11 +60,12 @@ class CMyConvolution:
         #   inRange is intensity range of input image
         #   outRange is intensity range of output image
 
-        #In this case, outRange is [0, 1] by default
-        outImg = exposure.rescale_intensity(outImg, in_range=(0, 255))
+        #Normalize image to be in range [0, 1] because its type is float
+        #outImg = (outImg - outImg.min())/(outImg.max() - outImg.min())
+        outImg = exposure.rescale_intensity(outImg, out_range=(0, 1))
         #Convert output image's dtype back to uint8 with scaling it by 255. Because its dtype still float64
-        #outImg = (outImg * 255).astype(np.uint8)
         outImg = img_as_ubyte(outImg)
+
         return outImg
 
 
