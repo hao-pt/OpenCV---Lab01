@@ -6,45 +6,46 @@ import math
 
 
 #Read image & display it
-img = myImage.readImage('girl.png')
+img = myImage.readImage('cat.jpg')
 
 #Grayscale image
 grayImg = myImage.grayScale(img)
 myImage.writeImage('Grayscale image', grayImg)
 
 # Detect edges
+# Init CFilter() obj
 filter = flt.CFilter()
-# filter.gaussianGenerator(5, 1.4)
+# Generate gaussian kernel
+filter.gaussianGenerator(5, 1)
+
+# # Detect edge by Prewitt filter
 # xImg, yImg, xyImg = filter.detectByPrewitt(grayImg)
-# #Show edges image
-# myImage.writeImage('Vertical image', xImg)
-# myImage.writeImage('Horizontal image', yImg)
-# myImage.writeImage('Edge detection', xyImg)
+# # Show edges image
+# myImage.writeImage('Prewitt X', xImg)
+# myImage.writeImage('Prewitt Y', yImg)
+# myImage.writeImage('Prewitt XY', xyImg)
+
+# # Detect edges by Sobel filter
+# xImg, yImg, xyImg = filter.detectBySobel(grayImg)
+# # Show edges image
+# myImage.writeImage('Sobel X', xImg)
+# myImage.writeImage('Sobel Y', yImg)
+# myImage.writeImage('Sobel XY', xyImg)
+
+# # Detect edges by Laplacian of gaussian filter
+# logImg = filter.detectByLaplacian(grayImg)
+# # Show edges image
+# myImage.writeImage('LoG edge detector', logImg)
 
 # Canny edge detector
 filter.gaussianGenerator(5, 1)
-cannyImg = filter.detectByCanny(grayImg)
+blurImg, sobelXY, surpressImg, thresholdingImg, cannyImg = filter.detectByCanny(grayImg)
+myImage.writeImage('Gauss blurring', blurImg)
+myImage.writeImage('Sobel XY', sobelXY)
+myImage.writeImage('Non-maximum surpression', surpressImg)
+myImage.writeImage('Thresholding image', thresholdingImg)
 myImage.writeImage('Canny edge detector', cannyImg)
 
-# # Detect edges by LoG
-# outImg = filter.detectByLaplacian(grayImg)
-# myImage.writeImage('Edge detection - Laplacian of Gaussian', outImg)
-
-# meanImg = filter.smoothenImage(grayImg, 'mean')
-# myImage.writeImage('Blur image - mean filter', meanImg)
-
-# print(filter.gaussianGenerator(7, 1.5))
-# gaussImg = filter.smoothenImage(grayImg, 'gauss')
-# myImage.writeImage('Blur image - gaussian filter', gaussImg)
-
-# xImg = filter.edgeDetector(grayImg, 'sobel')
-# myImage.writeImage('xy_image', xImg)
-# #cv2.imwrite('xImage.png', xImg)
-
-# a = np.array([[289, 370, 3], [-4, 240, 6], [30, 90, 500]], np.int)
-# b = np.array([2, 3, 4], np.uint8)
-# c = a * b
-# print(c.dtype, c)
 
 cv2.waitKey(0)
 # Destroy all windows

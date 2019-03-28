@@ -12,8 +12,7 @@ def gaussianXFunction(size, sigma):
     # Kernel radius
     kernelRadius = size // 2
     # x will range in [-kernelRadius, kernelRadius]
-    x = np.array([range(-kernelRadius, kernelRadius + 1)],
-                 np.float64).reshape(size, 1)
+    x = np.array([range(-kernelRadius, kernelRadius + 1)], np.float64).reshape(size, 1)
     # Calculate gaussian kernel X by gaussian function
     twoSquareSigma = 2 * (sigma**2)
     x_2 = x*x
@@ -76,31 +75,41 @@ def non_max_surpression(img, theta):
             #Check if pixel[y][x] >= t1 and pixel[y][x] >= t2, asign to surpressImg. Otherwise is 0
             if (img[y][x] >= t1) and (img[y][x] >= t2):
                 surpressImg.itemset((y, x), img[y][x])
+            else:
+                surpressImg.itemset((y, x), 0)
         
     
     return surpressImg
 
-# Utility that is to find strong and weak pixel related to edge
-def thresholding(img, lowRatio = 0.05, highRatio = 0.09):
-    #Compute 2 thresholds
-    highThreshold = img.max() * highRatio
-    lowThreshold = highThreshold * lowRatio
+# Find threshold base on ratio of two threshold
+# In this case, we pick sigma = 0.033 base on experience when testing often give stable result
+def thresholdSeeking(img, sigma = 0.033):
+    # Get median (or can get mean instead)
+    med = np.median(img)
     
+    #Find lowThreshold and highThreshold base on sigma
+    highThreshold = math.ceil(med * (0.1 + sigma))
+    lowThreshold = math.ceil(med * (0.1 - sigma))
+
+    return lowThreshold, highThreshold
+
+# Utility that is to find strong and weak pixel related to edge
+def thresholding(img, lowThreshold, highThreshold):
     # Any pixel have intensity greater than high threshold which are 'sure edge'
-    sureEdgeX, sureEdgeY = np.nonzero(img > highThreshold)
+    sureEdgeX, sureEdgeY = np.nonzero(img >= highThreshold)
     # Any pixel below low threshold which are non-edge. Dont matter
 	# Those are lie between these two threshold are classified: edge or non-edge according to 
     # their connectivity with strong pixel called weak pixel
-    weakEdgeX, weakEdgeY = np.nonzero((lowThreshold <= img) & (img <= highThreshold))
-
+    weakEdgeX, weakEdgeY = np.nonzero((lowThreshold <= img) & (img < highThreshold))
+    
     #Define strong and weak value to measure by myself
-    minValue = 15
+    minValue = 25
     maxValue = 200
 
     #Init thresholdingImg with 0-element
     thresholdingImg = np.zeros(img.shape, np.uint8)
     
-    #Now image just consists two pixel intensity value: strong and weak (15, 200)
+    #Now image just consists two pixel intensity value: strong and weak (25, 200)
     thresholdingImg[sureEdgeX, sureEdgeY] = maxValue
     thresholdingImg[weakEdgeX, weakEdgeY] = minValue
 
@@ -116,37 +125,23 @@ def hysteresis(img, minValue, maxValue):
     #Get size of img
     iH, iW = img.shape
 
-    #Init edgeImg
-    edgeImg = np.zeros(img.shape, np.uint8)
+    #Copy img to edgeImg
+    edgeImg = np.copy(img)
 
     #Now traverse img to transform pixel from weak to strong pixel
     for i in range(1, iH - 1):
         for j in range(1, iW - 1):
             # If pixel[i][j] has at least 1 neighbor which is 'sure edge'
-            if (img[i][j] == minValue):
-                if (np.sum((img[xidx + i, yidx + j] == maxValue)) > 0):
-                    img.itemset((i, j), maxValue)
+            if (edgeImg[i][j] == minValue):
+                if (np.any(edgeImg[xidx + i, yidx + j] == maxValue)):
+                    edgeImg.itemset((i, j), maxValue)
                 else:
-                    img.itemset((i, j), 0)
+                    edgeImg.itemset((i, j), 0)
 
 
-    return img
+    return edgeImg
 
-# def hysteresis(img, weak, strong=255):
-#     M, N = img.shape  
-#     for i in range(1, M-1):
-#         for j in range(1, N-1):
-#             if (img[i,j] == weak):
-#                 try:
-#                     if ((img[i+1, j-1] == strong) or (img[i+1, j] == strong) or (img[i+1, j+1] == strong)
-#                         or (img[i, j-1] == strong) or (img[i, j+1] == strong)
-#                         or (img[i-1, j-1] == strong) or (img[i-1, j] == strong) or (img[i-1, j+1] == strong)):
-#                         img[i, j] = strong
-#                     else:
-#                         img[i, j] = 0
-#                 except IndexError as e:
-#                     pass
-#     return img
+
 
 class CFilter:
     def __init__(self):
@@ -248,10 +243,10 @@ class CFilter:
         # Typically, |G| = |Gx| + |Gy|
         # avoid out of range [0, 255]
         magnitudeImg = np.zeros(img.shape, dtype=np.float64)
-        # magnitudeImg = np.sqrt(np.power(verticalImage.astype(
-        #     np.float64), 2) + np.power(horizontalImage.astype(np.float64), 2))
-        magnitudeImg = np.abs(verticalImage.astype(
-        np.float64)) + np.abs(horizontalImage.astype(np.float64))
+        magnitudeImg = np.sqrt(np.power(verticalImage.astype(
+            np.float64), 2) + np.power(horizontalImage.astype(np.float64), 2))
+        # magnitudeImg = np.abs(verticalImage.astype(
+        # np.float64)) + np.abs(horizontalImage.astype(np.float64))
 
         # Normalize the output image to be in range [0, 255] accurately_
         # _when it's presented in float dtype [0, 1] called 'shrinking image'
@@ -278,8 +273,8 @@ class CFilter:
         # Combine 2 vertical & horizontal image together to get magnitude of gradient at each point
         # avoid out of range [0, 255]
         magnitudeImg = np.zeros(img.shape, dtype=np.float64)
-        magnitudeImg = np.sqrt(np.power(verticalImage.astype(np.float64), 2)+ 
-        np.power(horizontalImage.astype(np.float64), 2))
+        magnitudeImg = np.sqrt(np.power(verticalImage.astype(
+            np.float64), 2) + np.power(horizontalImage.astype(np.float64), 2))
 
         # Normalize the output image to be in range [0, 255] accurately_
         # _when it's presented in float dtype [0, 1] called 'shrinking image'
@@ -300,14 +295,13 @@ class CFilter:
         logImg = conv.convolution(img)
         return logImg
 
-    def detectByCanny(self, img):
+    def detectByCanny(self, img, minValue = 20, maxValue = 200):
         # Canny edge detector:
         # 1. Blur image with deravative of gaussian
         # Declare CMyConvolution() object
         conv = myconv.CMyConvolution()
         blurImg = self.smoothenImage(img, 'gauss')
 
-        myImage.writeImage('Gauss blurring', blurImg)
 
         # 2. Find magnitude and orientation of gradient
         # 	- deltaX, deltaY and magnitude of X,Y orientations (by Sobel)
@@ -315,27 +309,24 @@ class CFilter:
         # 	- theta matrix of edge angles:
         #       theta = arctan(deltaY/deltaX)
         theta = np.arctan2(deltaY, deltaX)
-        
-        myImage.writeImage('Sobel X', deltaX)
-        myImage.writeImage('Sobel Y', deltaY)
-        myImage.writeImage('Sobel XY', deltaXY)
-        print(theta)
-        
+                
 
         # 3. Non-maximum suppression:
         # 	- Thin multi-pixel wide 'ridges' down to single pixel width
         surpressImg = non_max_surpression(deltaXY, theta)
 
-        myImage.writeImage('Non-maximum surpression', surpressImg)
-
 
         # 4. Linking and thresholding (hysteresis):
         # 	- Define two thresholds: low and high
     	#   - Use the high threshold to start edge curves and low threshold to continue them (edge map)
-        thresholdingImg,minValue,maxValue = thresholding(surpressImg)
 
-        myImage.writeImage('Thresholding image', thresholdingImg)
+        #Find 2 thresholds
+        lowThreshold, highThreshold = thresholdSeeking(img)
+        #Threshold img
+        thresholdingImg,minValue,maxValue = thresholding(surpressImg, lowThreshold, highThreshold)
+        
 
+        #Final step, turn weak pixel into strong pixel if it has connected with 'sure edge'
         edgeImg = hysteresis(thresholdingImg, minValue, maxValue)
 
-        return edgeImg
+        return blurImg, deltaXY, surpressImg, thresholdingImg, edgeImg
