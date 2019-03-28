@@ -39,8 +39,8 @@ def laplacianOfGaussian(size, sigma):
 
 # Thinning multiple-pixel of edge into single pixel
 def non_max_surpression(img, theta):
-    Angel = theta * 180/np.pi # Convert it to degree
-    Angel[Angel < 0] += 180 # To reduce the number of angle comparsion. 
+    Angle = theta * 180/np.pi # Convert it to degree
+    Angle[Angle < 0] += 180 # To reduce the number of angle comparsion. 
     #So we are just dealing with 4 main angles: 0, 45, 90, 135
     
     #Get size of image
@@ -56,15 +56,15 @@ def non_max_surpression(img, theta):
             t2 = 255
 
             #Angle 0
-            if (0 <= Angel[y][x] < 22.5) or (157.5 <= Angel[y][x] <= 180):
+            if (0 <= Angle[y][x] < 22.5) or (157.5 <= Angle[y][x] <= 180):
                 t1 = img[y][x - 1]
                 t2 = img[y][x + 1]
             #Angle 45
-            elif (22.5 <= Angel[y][x] < 67.5):
+            elif (22.5 <= Angle[y][x] < 67.5):
                 t1 = img[y - 1][x + 1]
                 t2 = img[y + 1][x - 1]
             #Angel 90
-            elif (67.5 <= Angel[y][x] < 112.5):
+            elif (67.5 <= Angle[y][x] < 112.5):
                 t1 = img[y - 1][x]
                 t2 = img[y + 1][x]
             #Angle 135
