@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 # Built-out lib
 import convolution as myconv
 import myImage
+import stack
 
 def gaussianXFunction(size, sigma):
     # Kernel radius
@@ -119,8 +120,8 @@ def thresholding(img, lowThreshold, highThreshold):
 # which is sure edge
 def hysteresis(img, minValue, maxValue):
     #Pre-Define indices of neighbors of pixel[i][j] to speed up when computing
-    xidx = np.array([-1, -1, -1, 0, 0, 1, 1, 1]) #Vertical axe
-    yidx = np.array([-1, 0, 1, -1, 1, -1, 0, 1]) #Horizontal axe
+    xidx = np.array([-1, -1, -1, 0, 0, 1, 1, 1]) #Vertical axe: relative neighbor for x coordinate
+    yidx = np.array([-1, 0, 1, -1, 1, -1, 0, 1]) #Horizontal axe: relative neighbor for y coordinate
     
     #Get size of img
     iH, iW = img.shape
@@ -138,7 +139,28 @@ def hysteresis(img, minValue, maxValue):
                 else:
                     edgeImg.itemset((i, j), 0)
 
+    # # Find the 1st week pixel in img and push in stack
+    # i, j = np.nonzero(edgeImg == minValue)
+    # # Instantiate stack
+    # S = stack.CStack([(i[0], j[0])])
 
+    # #Flood fill until stack is empty
+    # while not(S.empty()):
+    #     i, j = S.pop()
+    #     # If pixel[i][j] has at least 1 neighbor which is 'sure edge'
+    #     if (np.any(edgeImg[xidx + i, yidx + j] == maxValue)):
+    #         edgeImg.itemset((i, j), maxValue)
+    #     else:
+    #         edgeImg.itemset((i, j), 0)
+        
+    #     # Find 8-neighbor which are weak pixel
+    #     for z in range(8):
+    #         nx = xidx[z] + i
+    #         ny = yidx[z] + j
+    #         # Check if pixle[nx][ny]: weak pixel and that is not border
+    #         if edgeImg[nx][ny] == minValue and (1 <= nx <= iH - 1) and (1 <= ny <= iW - 1):
+    #             S.push((nx, ny))
+        
     return edgeImg
 
 

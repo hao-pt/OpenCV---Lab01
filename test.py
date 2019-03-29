@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import stack
 
 def gaussian_kernel(size, sigma=1):
     size = int(size) // 2
@@ -27,3 +28,11 @@ d = np.array([[1, 4, 3, 4], [5, 4, 5, 6], [10, 7, 8, 9], [23, 5, 9, -2]])
 print(d[x + 1, y + 2])
 print(np.sum(d[x + 1, y + 2] == 4) > 0)
 print(d.max())
+
+
+
+S = stack.CStack([(1, 2)])
+S.push((3, 4))
+print(S.Stack)
+i, j = S.pop()
+print(i, j)
