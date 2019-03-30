@@ -6,7 +6,6 @@ import math
 import matplotlib.pyplot as plt
 # Built-out lib
 import convolution as myconv
-import myImage
 import stack
 
 def gaussianXFunction(size, sigma):
@@ -105,12 +104,12 @@ def thresholding(img, lowThreshold, highThreshold):
     
     #Define strong and weak value to measure by myself
     minValue = 25
-    maxValue = 200
+    maxValue = 255
 
     #Init thresholdingImg with 0-element
     thresholdingImg = np.zeros(img.shape, np.uint8)
     
-    #Now image just consists two pixel intensity value: strong and weak (25, 200)
+    #Now image just consists two pixel intensity value: strong and weak (240, 25)
     thresholdingImg[sureEdgeX, sureEdgeY] = maxValue
     thresholdingImg[weakEdgeX, weakEdgeY] = minValue
 
@@ -129,41 +128,51 @@ def hysteresis(img, minValue, maxValue):
     #Copy img to edgeImg
     edgeImg = np.copy(img)
 
-    #Now traverse img to transform pixel from weak to strong pixel
-    for i in range(1, iH - 1):
-        for j in range(1, iW - 1):
-            # If pixel[i][j] has at least 1 neighbor which is 'sure edge'
-            if (edgeImg[i][j] == minValue):
-                if (np.any(edgeImg[xidx + i, yidx + j] == maxValue)):
-                    edgeImg.itemset((i, j), maxValue)
-                else:
-                    edgeImg.itemset((i, j), 0)
+    # # Use scanline: Faster but less detail than floodfill
+    # #Now traverse img to transform pixel from weak to strong pixel
+    # for i in range(1, iH - 1):
+    #     for j in range(1, iW - 1):
+    #         # If pixel[i][j] has at least 1 neighbor which is 'sure edge'
+    #         if (edgeImg[i][j] == minValue):
+    #             if (np.any(edgeImg[xidx + i, yidx + j] == maxValue)):
+    #                 edgeImg.itemset((i, j), maxValue)
+    #             else:
+    #                 edgeImg.itemset((i, j), 0)
 
-    # # Find the 1st week pixel in img and push in stack
-    # i, j = np.nonzero(edgeImg == minValue)
-    # # Instantiate stack
-    # S = stack.CStack([(i[0], j[0])])
+    # Use floodfill: fast, more detail than scanline
+    
+    # Init label matrix to check if pixel[i][j] visited
+    label = np.zeros(img.shape, np.uint8)
+    for x in range(1, iH):
+        for y in range(1, iW):
+            if edgeImg[x][y] != 0 and label[x][y] == 0:
+                # Instantiate stack
+                S = stack.CStack()
+                # Push (x, y) index into stack
+                S.push((x, y))
+                #Flood fill until stack is empty
+                while not(S.empty()):
+                    i, j = S.pop()
+                    if edgeImg[i][j] == minValue:
+                        # If pixel[i][j] has at least 1 neighbor which is 'sure edge'
+                        if (np.any(edgeImg[xidx + i, yidx + j] == maxValue)):
+                            edgeImg.itemset((i, j), maxValue)
+                        else:
+                            edgeImg.itemset((i, j), 0)
+                    # Mark it equal 1 when pass it
+                    label[i][j] = 1
+                    # Find 8-neighbor which are weak pixel
+                    for z in range(8):
+                        nx = xidx[z] + i
+                        ny = yidx[z] + j
+                        # Check if pixle[nx][ny]:  is not border and dont traverse before
+                        if (1 <= nx <= iH - 1) and (1 <= ny <= iW - 1) and label[nx][ny] == 0:
+                            # Check if pixle[nx][ny] is not 'non-edge'
+                            if edgeImg[nx][ny] != 0:
+                                S.push((nx, ny))
 
-    # #Flood fill until stack is empty
-    # while not(S.empty()):
-    #     i, j = S.pop()
-    #     # If pixel[i][j] has at least 1 neighbor which is 'sure edge'
-    #     if (np.any(edgeImg[xidx + i, yidx + j] == maxValue)):
-    #         edgeImg.itemset((i, j), maxValue)
-    #     else:
-    #         edgeImg.itemset((i, j), 0)
-        
-    #     # Find 8-neighbor which are weak pixel
-    #     for z in range(8):
-    #         nx = xidx[z] + i
-    #         ny = yidx[z] + j
-    #         # Check if pixle[nx][ny]: weak pixel and that is not border
-    #         if edgeImg[nx][ny] == minValue and (1 <= nx <= iH - 1) and (1 <= ny <= iW - 1):
-    #             S.push((nx, ny))
-        
     return edgeImg
-
-
+                            
 
 class CFilter:
     def __init__(self):
@@ -317,7 +326,7 @@ class CFilter:
         logImg = conv.convolution(img)
         return logImg
 
-    def detectByCanny(self, img, minValue = 20, maxValue = 200):
+    def detectByCanny(self, img):
         # Canny edge detector:
         # 1. Blur image with deravative of gaussian
         # Declare CMyConvolution() object
@@ -347,7 +356,6 @@ class CFilter:
         #Threshold img
         thresholdingImg,minValue,maxValue = thresholding(surpressImg, lowThreshold, highThreshold)
         
-
         #Final step, turn weak pixel into strong pixel if it has connected with 'sure edge'
         edgeImg = hysteresis(thresholdingImg, minValue, maxValue)
 

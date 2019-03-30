@@ -1,38 +1,109 @@
+#Built-in lib
 import numpy as np
 import cv2
-import stack
+import math
+from matplotlib import pyplot as plt 
+import argparse
 
-def gaussian_kernel(size, sigma=1):
-    size = int(size) // 2
-    x, y = np.mgrid[-size:size+1, -size:size+1]
-    normal = 1 / (2.0 * np.pi * sigma**2)
-    g =  np.exp(-((x**2 + y**2) / (2.0*sigma**2))) * normal
-    return g
+#Built-out libs
+import myImage
+
+#Instatiate ArgumentParser() obj and parse argument
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--input", required = True, help = "Path to input image")
+ap.add_argument("-c", "--code", required= True, help = "Code action")
+args = vars(ap.parse_args())
+
+# Find threshold base on ratio of two threshold
+# In this case, we pick sigma = 0.33 base on experience when testing often give stable result
+def thresholdSeeking(img, sigma = 0.33):
+    # Get median (or can get mean instead)
+    med = np.median(img)
+    
+    #Find lowThreshold and highThreshold base on sigma
+    highThreshold = math.ceil(med * (1 + sigma))
+    lowThreshold = math.ceil(med * (1 - sigma))
+
+    return lowThreshold, highThreshold
+
+def main(args):
+    # Measure time
+    e1 = cv2.getTickCount()
+
+    #Input image
+    img = myImage.readImage(args['input'])
+
+    #Gray-scale
+    img = myImage.grayScale(img)
+
+    # Get code active
+    code = int(args['code'])
+    
+    if code == 1:
+        # Sobel edge detector
+        # Blur image first
+        blurImg = cv2.GaussianBlur(img, (5, 5), 0)
+        sobelX = cv2.Sobel(blurImg, cv2.CV_64F , 1, 0, ksize = 3)
+        sobelY = cv2.Sobel(blurImg, cv2.CV_64F, 0, 1, ksize = 3)
+        # Compute magnitude
+        sobelXY,_ = cv2.cartToPolar(sobelX, sobelY)
+
+        # Convert image back to abs CV_8U
+        sobelX = cv2.convertScaleAbs(sobelX)
+        sobelY = cv2.convertScaleAbs(sobelY)
+        sobelXY = cv2.convertScaleAbs(sobelXY)
+
+        # Show image
+        myImage.writeImage('Sobel X', sobelX)
+        myImage.writeImage('Sobel Y', sobelY)
+        myImage.writeImage('Sobel XY', sobelXY)    
+
+    elif code == 2:
+        # Prewitt edge detector
+        blurImg = cv2.GaussianBlur(img, (5, 5), 0)
+
+        #Init kernel
+        kernelX = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+        kernelY = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])
+
+        prewittX = cv2.filter2D(blurImg, cv2.CV_64F, kernelX)
+        prewittY = cv2.filter2D(blurImg, cv2.CV_64F, kernelY)
+        # Compute magnitude
+        prewittXY,_ = cv2.cartToPolar(prewittX, prewittY)
+
+        # Convert image back to abs CV_8U
+        prewittX = cv2.convertScaleAbs(prewittX)
+        prewittY = cv2.convertScaleAbs(prewittY)
+        prewittXY = cv2.convertScaleAbs(prewittXY)
+
+        # Show edges image
+        myImage.writeImage('Prewitt X', prewittX)
+        myImage.writeImage('Prewitt Y', prewittY)
+        myImage.writeImage('Prewitt XY', prewittXY)
+
+    elif code == 3:
+        # Laplacian edge detector
+        blurImg = cv2.GaussianBlur(img, (5, 5), 0)
+        laplacian = cv2.Laplacian(blurImg,cv2.CV_64F)
+        # Convert img back to CV_U8
+        laplacian = cv2.convertScaleAbs(laplacian)
+        myImage.writeImage('Negative laplacian derivatives', laplacian)
+    
+    elif code == 4:
+        # Canny edge detector
+        lowThreshold, highThreshold = thresholdSeeking(img)
+        
+        edges = cv2.Canny(img, lowThreshold, highThreshold)
+        myImage.writeImage('Edge detection by OpenCv', edges)
+
+    e2 = cv2.getTickCount()
+    time = (e2 - e1)/cv2.getTickFrequency()
+    print('Time: %.2f(s)' %(time))
+
+    cv2.waitKey(0)
+    # Destroy all windows
+    cv2.destroyAllWindows()
 
 
-a = np.array([range(-2, 3)]).reshape(5, 1)
-print(a)
-b = np.tile(a, (1, 5))
-
-c = np.array([range(-2, 3)])
-d = np.tile(c, (5, 1))
-print((np.power(d, 2) + np.power(b, 2))/2)
-
-
-print(gaussian_kernel(5, 1.4))
-
-x = np.array([-1, -1, -1, 0, 0, 1, 1, 1])
-y = np.array([-1, 0, 1, -1, 1, -1, 0, 1])
-d = np.array([[1, 4, 3, 4], [5, 4, 5, 6], [10, 7, 8, 9], [23, 5, 9, -2]])
-#print(d)
-print(d[x + 1, y + 2])
-print(np.sum(d[x + 1, y + 2] == 4) > 0)
-print(d.max())
-
-
-
-S = stack.CStack([(1, 2)])
-S.push((3, 4))
-print(S.Stack)
-i, j = S.pop()
-print(i, j)
+if __name__ == "__main__":
+    main(args)

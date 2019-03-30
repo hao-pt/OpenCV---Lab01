@@ -1,20 +1,26 @@
+#Built-in libs
 import numpy as np
 import cv2
 import argparse
+import math
+from matplotlib import pyplot as plt
+
+#Built-out libs
 import myImage
 import filter as flt
-import math
 
 
 #Instatiate ArgumentParser() obj and parse argument
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", required = True, help = "Path to input image")
 ap.add_argument("-c", "--code", required= True, help = "Code action")
-# ap.add_argument("")
 args = vars(ap.parse_args())
 
 # Main driver
 def main(args):
+    #Measure time
+    e1 = cv2.getTickCount()
+
     #Read image & display it
     img = myImage.readImage(args['input'])
 
@@ -35,9 +41,11 @@ def main(args):
         # Detect edges by Sobel filter
         xImg, yImg, xyImg = filter.detectBySobel(grayImg)
         # Show edges image
+        # Use cv2 method
         myImage.writeImage('Sobel X', xImg)
         myImage.writeImage('Sobel Y', yImg)
-        myImage.writeImage('Sobel XY', xyImg)
+        myImage.writeImage('Sobel XY', xyImg)    
+
     elif code == 2:
         # Detect edge by Prewitt filter
         xImg, yImg, xyImg = filter.detectByPrewitt(grayImg)
@@ -63,10 +71,18 @@ def main(args):
         print('There are just 4 function from 1 to 4. Please enter code again!')
         return 0
 
+    
+    e2 = cv2.getTickCount()
+    time = (e2 - e1)/cv2.getTickFrequency()
+    print('Time: %.2f' %(time))
+
     cv2.waitKey(0)
     # Destroy all windows
     cv2.destroyAllWindows()
+
+    
     return 1
 
 if __name__ == '__main__':
     main(args)
+    
