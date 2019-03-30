@@ -53,10 +53,22 @@ def main(args):
         sobelY = cv2.convertScaleAbs(sobelY)
         sobelXY = cv2.convertScaleAbs(sobelXY)
 
-        # Show image
-        myImage.writeImage('Sobel X', sobelX)
-        myImage.writeImage('Sobel Y', sobelY)
-        myImage.writeImage('Sobel XY', sobelXY)    
+        # # Show image
+        # myImage.writeImage('Sobel X', sobelX)
+        # myImage.writeImage('Sobel Y', sobelY)
+        # myImage.writeImage('Sobel XY', sobelXY)
+
+        plt.figure(2)
+        plt.subplot(131)
+        plt.imshow(sobelX, cmap='gray', interpolation='bicubic')
+        plt.title('Sobel X'), plt.xticks([]), plt.yticks([])
+        plt.subplot(132)
+        plt.imshow(sobelY, cmap='gray', interpolation = 'bicubic')
+        plt.title('Sobel Y'), plt.xticks([]), plt.yticks([])
+        plt.subplot(133)
+        plt.imshow(sobelXY, cmap='gray', interpolation = 'bicubic')
+        plt.title('Sobel XY'), plt.xticks([]), plt.yticks([])
+        
 
     elif code == 2:
         # Prewitt edge detector
@@ -76,29 +88,54 @@ def main(args):
         prewittY = cv2.convertScaleAbs(prewittY)
         prewittXY = cv2.convertScaleAbs(prewittXY)
 
-        # Show edges image
-        myImage.writeImage('Prewitt X', prewittX)
-        myImage.writeImage('Prewitt Y', prewittY)
-        myImage.writeImage('Prewitt XY', prewittXY)
+        # # Show edges image
+        # myImage.writeImage('Prewitt X', prewittX)
+        # myImage.writeImage('Prewitt Y', prewittY)
+        # myImage.writeImage('Prewitt XY', prewittXY)
+
+        plt.figure(2)
+        plt.subplot(131)
+        plt.imshow(prewittX, cmap='gray', interpolation='bicubic')
+        plt.title('Prewitt X'), plt.xticks([]), plt.yticks([])
+        plt.subplot(132)
+        plt.imshow(prewittY, cmap='gray', interpolation = 'bicubic')
+        plt.title('Prewitt Y'), plt.xticks([]), plt.yticks([])
+        plt.subplot(133)
+        plt.imshow(prewittXY, cmap='gray', interpolation = 'bicubic')
+        plt.title('Prewitt XY'), plt.xticks([]), plt.yticks([])
+        
+
 
     elif code == 3:
         # Laplacian edge detector
-        blurImg = cv2.GaussianBlur(img, (5, 5), 0)
-        laplacian = cv2.Laplacian(blurImg,cv2.CV_64F)
+        blurImg = cv2.GaussianBlur(img, (3, 3), 0)
+        laplacian = cv2.Laplacian(blurImg, cv2.CV_64F)
         # Convert img back to CV_U8
         laplacian = cv2.convertScaleAbs(laplacian)
-        myImage.writeImage('Negative laplacian derivatives', laplacian)
+        # myImage.writeImage('Negative laplacian derivatives', laplacian)
+
+        plt.figure(2)
+        plt.imshow(laplacian, cmap='gray', interpolation='bicubic')
+        plt.title('Negative laplacian'), plt.xticks([]), plt.yticks([])
+
     
     elif code == 4:
         # Canny edge detector
         lowThreshold, highThreshold = thresholdSeeking(img)
         
         edges = cv2.Canny(img, lowThreshold, highThreshold)
-        myImage.writeImage('Edge detection by OpenCv', edges)
+        # myImage.writeImage('Edge detection by OpenCv', edges)
+
+        plt.figure(2)
+        plt.imshow(edges, cmap='gray', interpolation='bicubic')
+        plt.title('Canny edge detection'), plt.xticks([]), plt.yticks([])
+
 
     e2 = cv2.getTickCount()
     time = (e2 - e1)/cv2.getTickFrequency()
     print('Time: %.2f(s)' %(time))
+
+    plt.show()
 
     cv2.waitKey(0)
     # Destroy all windows

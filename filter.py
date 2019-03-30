@@ -318,12 +318,15 @@ class CFilter:
     def detectByLaplacian(self, img):
         # Declare CMyConvolution() object
         conv = myconv.CMyConvolution()
-        # #Smooth image by gaussian
-        # self.gaussianGenerator(5, 1.4)
-        # blurImg = self.smoothenImage(img, 'gauss')
+        #Smooth image by gaussian
+        self.gaussianGenerator(3, 0.75)
+        blurImg = self.smoothenImage(img, 'gauss')
         # Convolve img with that loG kernel
-        conv.setKernel(self.log5Kernel)
-        logImg = conv.convolution(img)
+        conv.setKernel(self.laplacianKernel)
+        logImg = conv.convolution(blurImg)
+
+        logImg += 20
+
         return logImg
 
     def detectByCanny(self, img):
