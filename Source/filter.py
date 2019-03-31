@@ -197,9 +197,9 @@ class CFilter:
         self.meanKernel = np.ones((3, 3), np.int) * 1.0/9
         self.gaussKernelX = self.gaussKernelY = 0
         # Negative kernel of laplacian (3x3)
-        self.laplacianKernel = np.array([[0, -1, 0],
-                                         [-1, 4, -1],
-                                         [0, -1, 0]], np.int)
+        self.laplacianKernel = np.array([[-1, -1, -1],
+                                         [-1, 8, -1],
+                                         [-1, -1, -1]], np.int)
         self.logKernel = 0
         self.log5Kernel = np.array([[0, 0, 1, 0, 0],
                                     [0, 1, 2, 1, 0],
@@ -258,24 +258,26 @@ class CFilter:
         self.logKernel = laplacianOfGaussian(size, sigma)
         return self.logKernel
 
-    def detectBySobel(self, img):
+    def detectBySobel(self, img, norm = False):
         # Declare CMyConvolution() object
         conv = myconv.CMyConvolution()
         # Smoothen image to have blur the noise and the detail of edges
         img = self.smoothenImage(img, 'gauss')
         # Convole with vertical kernel
         conv.setKernel(self.sobelKernel['Gx'])
-        verticalImage = conv.convolution(img)
+        verticalImage = conv.convolution(img, norm = norm)
         # Convole with horizontal kernel
         conv.setKernel(self.sobelKernel['Gy'])
-        horizontalImage = conv.convolution(img)
+        horizontalImage = conv.convolution(img, norm = norm)
         # Combine 2 vertical & horizontal image together to get magnitude of gradient at each point
         # |G| = sqrt(Gx^2 + Gy^2)
         # Typically, |G| = |Gx| + |Gy|
         # avoid out of range [0, 255]
+
         magnitudeImg = np.zeros(img.shape, dtype=np.float64)
         magnitudeImg = np.sqrt(np.power(verticalImage.astype(
             np.float64), 2) + np.power(horizontalImage.astype(np.float64), 2))
+
         # magnitudeImg = np.abs(verticalImage.astype(
         # np.float64)) + np.abs(horizontalImage.astype(np.float64))
 
@@ -285,6 +287,7 @@ class CFilter:
             magnitudeImg, out_range=(0, 1))
         # Convert dtype of image back to uint8
         magnitudeImg = img_as_ubyte(magnitudeImg)
+
         return (verticalImage, horizontalImage, magnitudeImg)
 
     def detectByPrewitt(self, img):
@@ -316,18 +319,66 @@ class CFilter:
         return (verticalImage, horizontalImage, magnitudeImg)
 
     def detectByLaplacian(self, img):
+        '''
+        3 steps:
+            step 1:
+                Gaussian smoothing
+            step 2:
+                Convolve smoothed image with Laplacian kernel
+            step 3:
+                find zero crossings in the resulting image of previous step 
+        '''
         # Declare CMyConvolution() object
         conv = myconv.CMyConvolution()
-        #Smooth image by gaussian
-        self.gaussianGenerator(3, 0.75)
-        blurImg = self.smoothenImage(img, 'gauss')
-        # Convolve img with that loG kernel
-        conv.setKernel(self.laplacianKernel)
-        logImg = conv.convolution(blurImg)
-
-        logImg += 20
-
-        return logImg
+        
+        height = img.shape[0] # chieu cao cua anh
+        width = img.shape[1] # chieu rong cua anh
+        # Step 1: Gaussian smoothing
+        smoothedImg = self.smoothenImage(img, 'gauss')
+        destinationImg = np.zeros(img.shape, np.uint8)
+        
+        # Step 2: Convolve smoothed image with Laplacian kernel (finish step 1 and 2)
+        conv.setKernel(self.laplacianKernel) 
+        step1_step2 = conv.convolution(smoothedImg, True)
+        
+        #step1_step2 = conv.doConvolution(sourceImg)
+    
+        neighbor_pos = ((-1,0), (1,0), (0,-1), (0,1), (-1,-1), (1,1), (-1,1), (1,-1))
+    
+        tmpImg = step1_step2
+        
+        # Step 3: find zero-crossings
+        
+        ''' - At each pixel in the image, considering 8 neighbors of that pixel.
+            - These 8 neighbors make into 4 symmetric pairs: (left, right), (up, down) and 2 diagonals.
+            - Then, counting how many pairs which have different sign in their 2 elements. 
+            (and the absolute value of the difference also needs to be greater than given threshold)
+            - If the result is more than 1, that pixel is zero crossing.''' 
+        
+        for y in range(height):
+            for x in range(width):
+                count = 0 
+                for k in range(0,8,2):
+                    n1_pos = (neighbor_pos[k][0]+y, neighbor_pos[k][1]+x)
+                    n2_pos = (neighbor_pos[k+1][0]+y, neighbor_pos[k+1][1]+x)
+                    if 0 <= n1_pos[0] < height and 0 <= n1_pos[1] < width and 0 <= n2_pos[0] < height and 0 <= n2_pos[1] < width:
+                        t = int(step1_step2[n1_pos[0], n1_pos[1]]) * step1_step2[n2_pos[0],n2_pos[1]] #Get sign
+                        if t < 0:
+                            if abs(int(step1_step2[n1_pos[0], n1_pos[1]]) - step1_step2[n2_pos[0],n2_pos[1]]) > 10:
+                                count += 1
+                        elif t == 0:
+                            if step1_step2[n1_pos[0],n1_pos[1]] < 0 or step1_step2[n2_pos[0],n2_pos[1]] < 0:
+                                if abs(int(step1_step2[n1_pos[0], n1_pos[1]]) - step1_step2[n2_pos[0],n2_pos[1]]) > 10:
+                                    count += 1
+           
+                if count < 2:
+                    tmpImg[y][x] = 0
+                    
+        tmpImg[tmpImg < 0] = abs(tmpImg[tmpImg <0]) + 30
+       
+        destinationImg = tmpImg.astype(np.uint8)
+            
+        return destinationImg
 
     def detectByCanny(self, img):
         # Canny edge detector:
@@ -339,7 +390,7 @@ class CFilter:
 
         # 2. Find magnitude and orientation of gradient
         # 	- deltaX, deltaY and magnitude of X,Y orientations (by Sobel)
-        deltaX, deltaY, deltaXY = self.detectBySobel(blurImg)
+        deltaX, deltaY, deltaXY = self.detectBySobel(blurImg, norm = True)
         # 	- theta matrix of edge angles:
         #       theta = arctan(deltaY/deltaX)
         theta = np.arctan2(deltaY, deltaX)

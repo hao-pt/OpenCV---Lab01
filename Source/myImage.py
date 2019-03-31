@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import myImage
 
 def readImage(path):
     #Read image

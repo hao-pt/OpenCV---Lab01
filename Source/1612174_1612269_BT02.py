@@ -49,7 +49,7 @@ def main(args):
         # Detect edges by Sobel filter
         xImg, yImg, xyImg = filter.detectBySobel(grayImg)
         # Show edges image
-        # Use cv2 method
+        # # Use cv2 method
         # myImage.writeImage('Sobel X', xImg)
         # myImage.writeImage('Sobel Y', yImg)
         # myImage.writeImage('Sobel XY', xyImg)
@@ -64,12 +64,11 @@ def main(args):
         plt.subplot(133)
         plt.imshow(xyImg, cmap='gray', interpolation = 'bicubic')
         plt.title('Sobel XY'), plt.xticks([]), plt.yticks([])
-        
 
     elif code == 2:
         # Detect edge by Prewitt filter
         xImg, yImg, xyImg = filter.detectByPrewitt(grayImg)
-        # # Show edges image
+        # Show edges image
         # myImage.writeImage('Prewitt X', xImg)
         # myImage.writeImage('Prewitt Y', yImg)
         # myImage.writeImage('Prewitt XY', xyImg)
@@ -84,18 +83,16 @@ def main(args):
         plt.subplot(133)
         plt.imshow(xyImg, cmap='gray', interpolation = 'bicubic')
         plt.title('Prewitt XY'), plt.xticks([]), plt.yticks([])
-        
 
     elif code == 3:
         # Detect edges by Laplacian of gaussian filter
         logImg = filter.detectByLaplacian(grayImg)
-        # # Show edges image
+        # Show edges image
         # myImage.writeImage('LoG edge detector', logImg)
-
+        
         plt.figure(2)
         plt.imshow(logImg, cmap='gray', interpolation='bicubic')
         plt.title('Negative laplacian'), plt.xticks([]), plt.yticks([])
-
 
     elif code == 4:
         # Canny edge detector
@@ -108,9 +105,24 @@ def main(args):
         # myImage.writeImage('Canny edge detector', cannyImg)
 
         plt.figure(2)
-        plt.imshow(cannyImg, cmap='gray', interpolation='bicubic')
-        plt.title('Canny edge detection'), plt.xticks([]), plt.yticks([])
+        plt.subplot(121)
+        plt.imshow(blurImg, cmap='gray', interpolation='bicubic')
+        plt.title('Gaussian blur'), plt.xticks([]), plt.yticks([])
+        plt.subplot(122)
+        plt.imshow(sobelXY, cmap='gray', interpolation='bicubic')
+        plt.title('Sobel XY'), plt.xticks([]), plt.yticks([])
+        
+        plt.figure(3)
+        plt.subplot(121)
+        plt.imshow(surpressImg, cmap='gray', interpolation='bicubic')
+        plt.title('Non-maximum surpression'), plt.xticks([]), plt.yticks([])
+        plt.subplot(122)
+        plt.imshow(thresholdingImg, cmap='gray', interpolation='bicubic')
+        plt.title('Thresholding'), plt.xticks([]), plt.yticks([])
 
+        plt.figure(4)
+        plt.imshow(cannyImg, cmap='gray', interpolation='bicubic')
+        plt.title('Canny edge detector'), plt.xticks([]), plt.yticks([])
 
     else:
         print('There are just 4 function from 1 to 4. Please enter code again!')
@@ -119,13 +131,13 @@ def main(args):
     
     e2 = cv2.getTickCount()
     time = (e2 - e1)/cv2.getTickFrequency()
-    print('Time: %.2f' %(time))
+    print('Time: %.2f(s)' %(time))
 
     plt.show()
 
-    cv2.waitKey(0)
-    # Destroy all windows
-    cv2.destroyAllWindows()
+    # cv2.waitKey(0)
+    # # Destroy all windows
+    # cv2.destroyAllWindows()
 
     
     return 1
